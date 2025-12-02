@@ -1,0 +1,60 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"cmake.configureOnOpen": true,
+		"cmake.sourceDirectory": "${workspaceFolder}",
+		"cmake.buildDirectory": "${workspaceFolder}/build",
+		"C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+		"files.associations": {
+			"*.h": "cpp",
+			"*.cpp": "cpp",
+			"*.qrc": "xml"
+		},
+		"editor.formatOnSave": true
+	},
+	"launch": {
+		"version": "0.2.0",
+		"configurations": [
+			{
+				"name": "Debug SaturnControl",
+				"type": "cppdbg",
+				"request": "launch",
+				"program": "${workspaceFolder}/build/SaturnControl",
+				"args": [],
+				"stopAtEntry": false,
+				"cwd": "${workspaceFolder}",
+				"environment": [],
+				"externalConsole": false,
+				"MIMode": "gdb",
+				"setupCommands": [
+					{
+						"description": "Enable pretty-printing for gdb",
+						"text": "-enable-pretty-printing",
+						"ignoreFailures": true
+					}
+				],
+				"preLaunchTask": "CMake: build"
+			}
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+		"tasks": [
+			{
+				"label": "CMake: build",
+				"type": "cmake",
+				"command": "build",
+				"group": {
+					"kind": "build",
+					"isDefault": true
+				},
+				"problemMatcher": [],
+				"detail": "Builds the project using CMake"
+			}
+		]
+	}
+}

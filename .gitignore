@@ -1,0 +1,28 @@
+# CMake build artifacts
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.cmake
+
+# Qt Creator specific
+*.user
+*.user.*
+
+# Qt Auto-generated files (MOC, UIC, RCC)
+*_autogen/
+*.qrc
+qrc_*.cpp
+
+# Executables
+SaturnControl
+*.exe
+*.o
+*.obj
+
+# IDE & OS specifics
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
