@@ -18,7 +18,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setupUi();
 
     // --- UI Signal/Slot Connections ---
-    connect(backend, &SaturnBackend::modelDetected, [this](QString model) {
+    connect(backend, &SaturnBackend::modelDetected, [this](QString model)
+            {
         QString ip = ipInput->text();
         if (!ip.isEmpty()) {
             ipToModel.insert(ip, model);
@@ -27,34 +28,34 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
         QPixmap pixmap(imagePath);
         if (!pixmap.isNull()) {
             imgLabel->setPixmap(pixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
-        }
-    });
+        } });
 
-    connect(backend, &SaturnBackend::connectionReady, [this]() {
-        qobject_cast<QStackedWidget *>(centralWidget())->setCurrentWidget(controlPage);
-    });
+    connect(backend, &SaturnBackend::connectionReady, [this]()
+            { qobject_cast<QStackedWidget *>(centralWidget())->setCurrentWidget(controlPage); });
 
     connect(backend, &SaturnBackend::statusUpdate, this, &MainWindow::updateStatus);
     connect(backend, &SaturnBackend::remainingTimeUpdate, this, &MainWindow::updateRemainingTime);
 
-    connect(backend, &SaturnBackend::statusUpdate, [this](QString status, int, int, QString) {
+    connect(backend, &SaturnBackend::statusUpdate, [this](QString status, int, int, QString)
+            {
         if (status.contains(tr("Printing")) || status.contains(tr("Exposing")) || status.contains(tr("Lowering"))) {
             btnPrintLast->setVisible(false);
-        }
-    });
+        } });
 
     connect(backend, &SaturnBackend::uploadProgress, progressBar, &QProgressBar::setValue);
     connect(backend, &SaturnBackend::fileReadyToPrint, this, &MainWindow::showPrintButton);
-    connect(backend, &SaturnBackend::logMessage, [](QString msg) {
-        qDebug() << "LOG:" << msg;
-    });
+    connect(backend, &SaturnBackend::logMessage, [](QString msg)
+            { qDebug() << "LOG:" << msg; });
 
     // Set initial language based on system locale
     QString defaultLocale = QLocale::system().name().section('_', 0, 0);
     int index = languageComboBox->findData(defaultLocale);
-    if (index != -1) {
+    if (index != -1)
+    {
         languageComboBox->setCurrentIndex(index);
-    } else {
+    }
+    else
+    {
         languageComboBox->setCurrentIndex(0); // Default to English
     }
     onLanguageChanged(languageComboBox->currentIndex());
@@ -80,7 +81,7 @@ void MainWindow::setupUi()
     languageComboBox = new QComboBox();
     languageComboBox->addItem("English", "en");
     languageComboBox->addItem("Español", "es");
-    
+
     layout1->addWidget(languageComboBox);
     layout1->addWidget(scanPageLabel);
     layout1->addWidget(printerList);
@@ -98,7 +99,8 @@ void MainWindow::setupUi()
 
     imgLabel = new QLabel();
     QPixmap pixmap(":/resources/images/default.png");
-    if (!pixmap.isNull()) {
+    if (!pixmap.isNull())
+    {
         imgLabel->setPixmap(pixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     }
     imgLabel->setAlignment(Qt::AlignCenter);
@@ -136,7 +138,8 @@ void MainWindow::setupUi()
  */
 void MainWindow::changeEvent(QEvent *event)
 {
-    if (event->type() == QEvent::LanguageChange) {
+    if (event->type() == QEvent::LanguageChange)
+    {
         retranslateUi();
     }
     QMainWindow::changeEvent(event);
@@ -148,7 +151,7 @@ void MainWindow::changeEvent(QEvent *event)
 void MainWindow::retranslateUi()
 {
     setWindowTitle(tr("Saturn Controller C++"));
-    scanPageLabel->setText(tr("Select a Saturn printer:"));
+    scanPageLabel->setText(tr("Select a Elegoo printer:"));
     btnScan->setText(tr("Scan for Printers"));
     ipInput->setPlaceholderText(tr("Manual IP (e.g., 192.168.1.50)"));
     btnConnect->setText(tr("Connect"));
@@ -167,18 +170,19 @@ void MainWindow::retranslateUi()
 void MainWindow::onLanguageChanged(int index)
 {
     QString langCode = languageComboBox->itemData(index).toString();
-    
+
     qApp->removeTranslator(&translator);
 
-    if (langCode != "en") {
+    if (langCode != "en")
+    {
         QDir translationsDir(qApp->applicationDirPath());
         translationsDir.cd("translations");
-        if (translator.load(translationsDir.filePath("saturn_" + langCode + ".qm"))) {
+        if (translator.load(translationsDir.filePath("saturn_" + langCode + ".qm")))
+        {
             qApp->installTranslator(&translator);
         }
     }
 }
-
 
 /**
  * @brief Slot triggered by the 'Scan' button. Clears the list and starts discovery.
@@ -195,12 +199,14 @@ void MainWindow::onScanClicked()
 void MainWindow::onConnectClicked()
 {
     QString ip = ipInput->text();
-    if (ip.isEmpty()) return;
+    if (ip.isEmpty())
+        return;
 
     QString model = ipToModel.value(ip, "Unknown");
     QString imagePath = getIconPathForModel(model);
     QPixmap pixmap(imagePath);
-    if (!pixmap.isNull()) {
+    if (!pixmap.isNull())
+    {
         imgLabel->setPixmap(pixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     }
 
@@ -213,7 +219,8 @@ void MainWindow::onConnectClicked()
 void MainWindow::onUploadClicked()
 {
     QString fileName = QFileDialog::getOpenFileName(this, tr("Open File"), "", tr("Goo Files (*.goo *.ctb)"));
-    if (!fileName.isEmpty()) {
+    if (!fileName.isEmpty())
+    {
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, tr("Print"), tr("Start printing immediately after upload?"),
                                       QMessageBox::Yes | QMessageBox::No);
@@ -233,21 +240,27 @@ void MainWindow::onUploadClicked()
  */
 void MainWindow::updateStatus(QString status, int layer, int total, QString file)
 {
-    if (status.contains(tr("RECEIVING")) || status.contains(tr("Uploading"))) {
+    if (status.contains(tr("RECEIVING")) || status.contains(tr("Uploading")))
+    {
         lblStatus->setText(tr("Status: ") + status);
         lblStatus->setStyleSheet("font-weight: bold; color: orange;");
         lblFile->setText(tr("File: ") + file);
-    } else if (total > 0) {
+    }
+    else if (total > 0)
+    {
         lblStatus->setText(tr("Status: ") + status);
         lblStatus->setStyleSheet("font-weight: bold; color: green;");
         lblFile->setText(QString(tr("File: %1 (Layer %2/%3)")).arg(file).arg(layer).arg(total));
         progressBar->setValue((layer * 100) / total);
         progressBar->setFormat(tr("%p% (Printing)"));
-    } else {
+    }
+    else
+    {
         lblStatus->setText(tr("Status: ") + status);
         lblStatus->setStyleSheet("color: black;");
         lblFile->setText(tr("File: ") + file);
-        if (status.contains(tr("Ready"))) {
+        if (status.contains(tr("Ready")))
+        {
             progressBar->setValue(0);
             progressBar->setFormat("%p%");
         }
@@ -260,9 +273,12 @@ void MainWindow::updateStatus(QString status, int layer, int total, QString file
  */
 void MainWindow::updateRemainingTime(const QString &time)
 {
-    if (time.isEmpty()) {
+    if (time.isEmpty())
+    {
         lblRemainingTime->setVisible(false);
-    } else {
+    }
+    else
+    {
         lblRemainingTime->setText(tr("Remaining time: ") + time);
         lblRemainingTime->setVisible(true);
     }
@@ -283,14 +299,16 @@ void MainWindow::showPrintButton(QString filename)
  */
 void MainWindow::onPrintLastClicked()
 {
-    if (lastReadyFile.isEmpty()) return;
+    if (lastReadyFile.isEmpty())
+        return;
 
     QMessageBox::StandardButton reply;
     reply = QMessageBox::question(this, tr("Confirm Print"),
                                   tr("Is the printer ready (build plate clean, resin filled, etc.)?\n\nFile: ") + lastReadyFile,
                                   QMessageBox::Yes | QMessageBox::No);
 
-    if (reply == QMessageBox::Yes) {
+    if (reply == QMessageBox::Yes)
+    {
         btnPrintLast->setVisible(false);
         backend->printExistingFile(lastReadyFile);
     }
@@ -302,9 +320,12 @@ void MainWindow::onPrintLastClicked()
 QString MainWindow::getIconPathForModel(const QString &modelName)
 {
     QString m = modelName.toLower();
-    if (m.contains("saturn 3 ultra")) {
+    if (m.contains("saturn 3 ultra"))
+    {
         return ":/resources/images/saturn3ultra.png";
-    } else if (m.contains("saturn 3")) {
+    }
+    else if (m.contains("saturn 3"))
+    {
         return ":/resources/images/saturn3.png";
     }
     return ":/resources/images/default.png";

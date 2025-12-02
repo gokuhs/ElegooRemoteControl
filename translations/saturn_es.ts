@@ -8,8 +8,8 @@
         <translation>Saturn Controller C++</translation>
     </message>
     <message>
-        <source>Select a Saturn printer:</source>
-        <translation>Selecciona una impresora Saturn:</translation>
+        <source>Select a Elegoo printer:</source>
+        <translation>Selecciona una impresora Elegoo:</translation>
     </message>
     <message>
         <source>Scan for Printers</source>
