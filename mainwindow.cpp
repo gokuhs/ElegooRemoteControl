@@ -13,21 +13,29 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     connect(backend, &SaturnBackend::printerFound, [this](QString ip, QString name)
             {
-                printerList->addItem(name + " (" + ip + ")");
-                ipInput->setText(ip); // Auto-rellenar la última encontrada
-            });
+        printerList->addItem(name + " (" + ip + ")");
+        ipInput->setText(ip); });
 
     connect(backend, &SaturnBackend::connectionReady, [this]()
-            {
-        // Cambiar a pantalla de control cuando la impresora se conecta y suscribe
-        qobject_cast<QStackedWidget*>(centralWidget())->setCurrentWidget(controlPage); });
+            { qobject_cast<QStackedWidget *>(centralWidget())->setCurrentWidget(controlPage); });
 
+    // --- IMPORTANTE: ESTAS SON LAS DOS LÍNEAS CRÍTICAS ---
+
+    // 1. ESTA ES LA QUE FALTA: Actualiza el texto "Imprimiendo...", "Exponiendo", etc.
     connect(backend, &SaturnBackend::statusUpdate, this, &MainWindow::updateStatus);
 
-    connect(backend, &SaturnBackend::uploadProgress, [this](int percent)
+    // 2. Esta es la nueva que ocultaba el botón verde si empieza a imprimir
+    connect(backend, &SaturnBackend::statusUpdate, [this](QString status, int, int, QString)
             {
-    progressBar->setValue(percent);
-    progressBar->setFormat(QString("Subiendo: %1%").arg(percent)); });
+        if (status.contains("Imprimiendo") || status.contains("Exponiendo") || status.contains("Bajando")) {
+            btnPrintLast->setVisible(false);
+        } });
+
+    // -----------------------------------------------------
+
+    connect(backend, &SaturnBackend::uploadProgress, progressBar, &QProgressBar::setValue);
+
+    connect(backend, &SaturnBackend::fileReadyToPrint, this, &MainWindow::showPrintButton);
 
     connect(backend, &SaturnBackend::logMessage, [](QString msg)
             { qDebug() << "LOG:" << msg; });
@@ -80,13 +88,22 @@ void MainWindow::setupUi()
     progressBar = new QProgressBar;
     btnUpload = new QPushButton("Subir Archivo .goo");
 
+    btnPrintLast = new QPushButton("Imprimir último archivo");
+    btnPrintLast->setStyleSheet("background-color: #dbf0e3; color: #2e5c3e; font-weight: bold;"); // Un verde suave
+    btnPrintLast->setVisible(false);
+
+    btnUpload = new QPushButton("Subir Archivo .goo");
+
     layout2->addWidget(imgLabel);
     layout2->addWidget(lblStatus);
     layout2->addWidget(lblFile);
     layout2->addWidget(progressBar);
+
+    layout2->addWidget(btnPrintLast);
     layout2->addWidget(btnUpload);
 
     connect(btnUpload, &QPushButton::clicked, this, &MainWindow::onUploadClicked);
+    connect(btnPrintLast, &QPushButton::clicked, this, &MainWindow::onPrintLastClicked);
 
     stack->addWidget(scanPage);
     stack->addWidget(controlPage);
@@ -120,6 +137,8 @@ void MainWindow::onUploadClicked()
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Imprimir", "¿Quieres empezar a imprimir inmediatamente después de subir?",
                                       QMessageBox::Yes | QMessageBox::No);
+
+        btnPrintLast->setVisible(false);
 
         // FEEDBACK INMEDIATO
         lblStatus->setText("Estado: PREPARANDO SUBIDA...");
@@ -163,5 +182,33 @@ void MainWindow::updateStatus(QString status, int layer, int total, QString file
             progressBar->setValue(0);
             progressBar->setFormat("%p%");
         }
+    }
+}
+
+void MainWindow::showPrintButton(QString filename)
+{
+    // Guardamos el nombre
+    lastReadyFile = filename;
+
+    // Actualizamos el texto y mostramos el botón
+    btnPrintLast->setText("Imprimir: " + filename);
+    btnPrintLast->setVisible(true);
+}
+
+void MainWindow::onPrintLastClicked()
+{
+    if (lastReadyFile.isEmpty())
+        return;
+
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Confirmar Impresión",
+                                  "¿Estás seguro de que la impresora está lista (plato limpio, resina, etc)?\n\nArchivo: " + lastReadyFile,
+                                  QMessageBox::Yes | QMessageBox::No);
+
+    if (reply == QMessageBox::Yes)
+    {
+        // Ocultamos el botón para que no le den dos veces
+        btnPrintLast->setVisible(false);
+        backend->printExistingFile(lastReadyFile);
     }
 }

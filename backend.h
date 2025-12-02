@@ -21,6 +21,7 @@ public:
     void startDiscovery();
     void connectToPrinter(const QString &ip);
     void uploadAndPrint(const QString &filePath, bool autoStart);
+    void printExistingFile(const QString &filename);
 
 signals:
     void printerFound(QString ip, QString name);
@@ -28,6 +29,7 @@ signals:
     void logMessage(QString msg);
     void uploadProgress(int percent);
     void connectionReady(); // Cuando la impresora se conecta a nuestro servidor MQTT
+    void fileReadyToPrint(QString filename);
 
 private slots:
     // Discovery

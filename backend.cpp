@@ -302,13 +302,24 @@ void SaturnBackend::processPublish(const QString &topic, const QByteArray &paylo
                 emit statusUpdate("Procesando archivo...", 0, 0, fileInfo["Filename"].toString());
             }
         }
-        // CASO 3: IDLE / LISTO (Prioridad absoluta si CurrentStatus es 0)
+        // CASO 3: IDLE / LISTO
         else if (currentStatus == 0)
         {
-            // Aquí ignoramos el transferStatus == 2 antiguo para la GUI
             emit statusUpdate("Listo (En espera)", 0, 0, "");
-            // Forzamos barra a 0 para limpiar residuos visuales
             emit uploadProgress(0);
+
+            // --- LÓGICA NUEVA PARA EL BOTÓN ---
+            // Si la transferencia anterior fue exitosa (2) y hay un nombre de archivo
+            if (transferStatus == 2)
+            {
+                QString lastFile = fileInfo["Filename"].toString();
+                if (!lastFile.isEmpty())
+                {
+                    // Avisamos a la GUI de que este archivo se puede imprimir ya
+                    emit fileReadyToPrint(lastFile);
+                }
+            }
+            // ----------------------------------
         }
 
         // --- DETECCIÓN DE EVENTOS (DISPARADORES) ---
@@ -626,4 +637,15 @@ void SaturnBackend::sendHandshake()
     sendSaturnCommand(512, timeData);
 
     emit logMessage("Handshake enviado.");
+}
+
+void SaturnBackend::printExistingFile(const QString &filename)
+{
+    emit logMessage("Enviando orden de imprimir archivo existente: " + filename);
+
+    QJsonObject printData;
+    printData["Filename"] = filename;
+    printData["StartLayer"] = 0;
+
+    sendSaturnCommand(128, printData);
 }
