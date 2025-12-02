@@ -47,34 +47,49 @@ void SaturnBackend::connectToPrinter(const QString &ip)
 {
     this->printerIp = ip;
 
-    // CAMBIO: Usar puertos FIJOS en lugar de 0
-    // Si falla (puerto ocupado), intentamos notificarlo o dejamos que falle el listen.
+    // 1. Detectar cuál es MI dirección IP que "ve" a la impresora
+    QHostAddress myAddress = findMyIpForTarget(ip);
 
-    // Cerrar si ya estaban abiertos (para permitir reconexiones limpias)
+    emit logMessage("Intentando vincular servidor a la interfaz: " + myAddress.toString());
+
+    // Cerrar si ya estaban abiertos
     if (mqttServer->isListening())
         mqttServer->close();
     if (httpServer->isListening())
         httpServer->close();
 
-    if (!mqttServer->listen(QHostAddress::Any, PORT_MQTT_FIXED))
+    // CAMBIO IMPORTANTE: Usamos myAddress en lugar de QHostAddress::Any
+    // Usamos puertos altos fijos. Si el 9090 falla, intenta el 0 (aleatorio) como último recurso.
+
+    quint16 mqttPort = PORT_MQTT_FIXED;
+    if (!mqttServer->listen(myAddress, mqttPort))
     {
-        emit logMessage("Error: No se pudo iniciar servidor MQTT en puerto 9090 (¿Ya está en uso?)");
-        return;
+        emit logMessage("Puerto 9090 ocupado o bloqueado. Intentando aleatorio...");
+        if (!mqttServer->listen(myAddress, 0))
+        {
+            emit logMessage("ERROR CRÍTICO: No se puede abrir puerto MQTT en " + myAddress.toString());
+            return;
+        }
+        mqttPort = mqttServer->serverPort();
     }
 
-    if (!httpServer->listen(QHostAddress::Any, PORT_HTTP_FIXED))
-    {
-        emit logMessage("Error: No se pudo iniciar servidor HTTP en puerto 9091");
+    // Lo mismo para HTTP
+    if (!httpServer->listen(myAddress, 0))
+    { // HTTP puede ser aleatorio sin problema, la impresora lo lee del JSON
+        emit logMessage("ERROR: No se pudo iniciar servidor HTTP");
         return;
     }
 
     // 2. Enviar el comando mágico UDP
     QUdpSocket sender;
-    // Ahora enviamos el puerto fijo 9090 a la impresora
-    QByteArray cmd = "M66666 " + QByteArray::number(mqttServer->serverPort());
+    // IMPORTANTE: Le decimos a la impresora explícitamente a qué IP y Puerto conectarse
+    // El protocolo es: "M66666 [PUERTO]" (La impresora asume que la IP es desde la que recibió el paquete)
+    QByteArray cmd = "M66666 " + QByteArray::number(mqttPort);
     sender.writeDatagram(cmd, QHostAddress(ip), 3000);
 
-    emit logMessage(QString("Esperando conexión de impresora en puerto MQTT %1...").arg(mqttServer->serverPort()));
+    emit logMessage(QString("Invitación enviada. Esperando a la impresora en %1:%2...")
+                        .arg(myAddress.toString())
+                        .arg(mqttPort));
 }
 
 // --- LÓGICA MQTT (Portado de simple_mqtt_server.py) ---

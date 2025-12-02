@@ -10,8 +10,10 @@
 #include <QJsonObject>
 #include <QFile>
 #include "protocol.h"
+#include <QNetworkInterface>
 
-class SaturnBackend : public QObject {
+class SaturnBackend : public QObject
+{
     Q_OBJECT
 
 public:
@@ -30,20 +32,20 @@ signals:
 private slots:
     // Discovery
     void onUdpReadyRead();
-    
+
     // MQTT Server Logic
     void onMqttConnection();
     void onMqttData();
-    
+
     // HTTP Server Logic
     void onHttpConnection();
-    
+
 private:
     // Sockets
     QUdpSocket *udpSocket;
     QTcpServer *mqttServer;
     QTcpServer *httpServer;
-    
+
     // Estado
     QTcpSocket *clientSocket = nullptr; // La impresora conectada via MQTT
     QString printerIp;
@@ -55,16 +57,36 @@ private:
     const quint16 PORT_UDP_LISTEN = 0;
     const quint16 PORT_MQTT_FIXED = 9090;
     const quint16 PORT_HTTP_FIXED = 9091;
-    
+
     // Helpers MQTT
     void handleMqttPacket(const QByteArray &data, QTcpSocket *socket);
     void sendMqttMessage(QTcpSocket *socket, int type, int flags, const QByteArray &payload, int packetId = 0);
     QByteArray encodeLength(int length);
     void processPublish(const QString &topic, const QByteArray &payload);
-    
+
     // Comandos Saturn
     void sendSaturnCommand(int cmdId, const QJsonObject &data);
     QString randomHexStr(int length);
+
+    // Función auxiliar para encontrar nuestra IP en la misma subred que la impresora
+    QHostAddress findMyIpForTarget(const QString &targetIpStr)
+    {
+        QHostAddress targetIp(targetIpStr);
+        // Iteramos todas las interfaces de red del PC
+        for (const QHostAddress &address : QNetworkInterface::allAddresses())
+        {
+            if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress::LocalHost)
+            {
+                // Truco simple: Si los primeros 3 octetos coinciden (ej: 192.168.1.x), es nuestra interfaz
+                if (address.isInSubnet(targetIp, 24))
+                {
+                    return address;
+                }
+            }
+        }
+        // Si falla, volvemos a Any
+        return QHostAddress::Any;
+    }
 };
 
 #endif // BACKEND_H
