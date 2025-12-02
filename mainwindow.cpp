@@ -35,6 +35,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     });
 
     connect(backend, &SaturnBackend::statusUpdate, this, &MainWindow::updateStatus);
+    connect(backend, &SaturnBackend::remainingTimeUpdate, this, &MainWindow::updateRemainingTime);
 
     connect(backend, &SaturnBackend::statusUpdate, [this](QString status, int, int, QString) {
         if (status.contains(tr("Printing")) || status.contains(tr("Exposing")) || status.contains(tr("Lowering"))) {
@@ -104,6 +105,7 @@ void MainWindow::setupUi()
 
     lblStatus = new QLabel();
     lblFile = new QLabel();
+    lblRemainingTime = new QLabel();
     progressBar = new QProgressBar;
     btnUpload = new QPushButton();
     btnPrintLast = new QPushButton();
@@ -113,6 +115,7 @@ void MainWindow::setupUi()
     layout2->addWidget(imgLabel);
     layout2->addWidget(lblStatus);
     layout2->addWidget(lblFile);
+    layout2->addWidget(lblRemainingTime);
     layout2->addWidget(progressBar);
     layout2->addWidget(btnPrintLast);
     layout2->addWidget(btnUpload);
@@ -144,18 +147,15 @@ void MainWindow::changeEvent(QEvent *event)
  */
 void MainWindow::retranslateUi()
 {
-    setWindowTitle(tr("Saturn Controller C++\n"));
-
-    // Page 1
+    setWindowTitle(tr("Saturn Controller C++"));
     scanPageLabel->setText(tr("Select a Saturn printer:"));
     btnScan->setText(tr("Scan for Printers"));
     ipInput->setPlaceholderText(tr("Manual IP (e.g., 192.168.1.50)"));
     btnConnect->setText(tr("Connect"));
-
-    // Page 2
     imgLabel->setText(tr("[Image not found]"));
     lblStatus->setText(tr("Status: DISCONNECTED"));
     lblFile->setText(tr("File: -"));
+    lblRemainingTime->setText(tr("Remaining time: Calculating..."));
     btnUpload->setText(tr("Upload .goo File"));
     btnPrintLast->setText(tr("Print Last Uploaded File"));
 }
@@ -251,6 +251,20 @@ void MainWindow::updateStatus(QString status, int layer, int total, QString file
             progressBar->setValue(0);
             progressBar->setFormat("%p%");
         }
+    }
+}
+
+/**
+ * @brief Slot to update the estimated remaining time display.
+ * @param time The estimated time as a formatted string.
+ */
+void MainWindow::updateRemainingTime(const QString &time)
+{
+    if (time.isEmpty()) {
+        lblRemainingTime->setVisible(false);
+    } else {
+        lblRemainingTime->setText(tr("Remaining time: ") + time);
+        lblRemainingTime->setVisible(true);
     }
 }
 

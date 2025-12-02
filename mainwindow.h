@@ -63,6 +63,12 @@ private slots:
     void updateStatus(QString status, int layer, int total, QString file);
 
     /**
+     * @brief Slot to update the estimated remaining time display.
+     * @param time The estimated time as a formatted string.
+     */
+    void updateRemainingTime(const QString &time);
+
+    /**
      * @brief Slot triggered when the 'Print Last Uploaded' button is clicked.
      */
     void onPrintLastClicked();
@@ -109,6 +115,7 @@ private:
 
     QLabel *lblStatus;        ///< Label to display the printer's current status.
     QLabel *lblFile;          ///< Label to display the name of the current file.
+    QLabel *lblRemainingTime; ///< Label to display the estimated remaining print time.
     QProgressBar *progressBar;///< Progress bar for file uploads and print progress.
     QPushButton *btnUpload;   ///< Button to initiate file upload.
     QPushButton *btnPrintLast;///< Button to print the last successfully uploaded file.

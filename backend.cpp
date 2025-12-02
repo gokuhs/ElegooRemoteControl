@@ -303,14 +303,55 @@ void SaturnBackend::processPublish(const QString &topic, const QByteArray &paylo
             case PrintStatus::EXPOSURE: statusText = tr("Exposing Layer"); break;
             case PrintStatus::RETRACTING: statusText = tr("Retracting"); break;
             case PrintStatus::LOWERING: statusText = tr("Lowering"); break;
-            case PrintStatus::COMPLETE: statusText = tr("Complete / Paused"); break;
+            case PrintStatus::COMPLETE:
+                statusText = tr("Complete / Paused");
+                layerTimes.clear();
+                lastLayer = -1;
+                emit remainingTimeUpdate(""); // Clear time when paused or complete
+                break;
             default: statusText = QString(tr("Printing (Code %1)")).arg(printStatus); break;
             }
 
-            emit statusUpdate(statusText,
-                              printInfo["CurrentLayer"].toInt(),
-                              printInfo["TotalLayer"].toInt(),
-                              printInfo["Filename"].toString());
+            int currentLayer = printInfo["CurrentLayer"].toInt();
+            int totalLayers = printInfo["TotalLayer"].toInt();
+
+            if (lastLayer == -1 && currentLayer > 0) { // Print just started
+                layerStartTime = QDateTime::currentDateTime();
+                lastLayer = currentLayer;
+                layerTimes.clear();
+                emit remainingTimeUpdate(tr("Calculating..."));
+            } else if (currentLayer > lastLayer) {
+                qint64 elapsed = layerStartTime.msecsTo(QDateTime::currentDateTime());
+                layerStartTime = QDateTime::currentDateTime();
+                
+                // Add time per layer (for multiple layers if status update was skipped)
+                for(int i = 0; i < (currentLayer - lastLayer); ++i) {
+                    layerTimes.append(elapsed / 1000.0);
+                }
+                
+                // Keep the list of layer times to a reasonable size for a rolling average
+                while(layerTimes.size() > 20) {
+                    layerTimes.removeFirst();
+                }
+
+                double averageLayerTime = 0;
+                for(double t : layerTimes) {
+                    averageLayerTime += t;
+                }
+                averageLayerTime /= layerTimes.size();
+
+                int remainingLayers = totalLayers - currentLayer;
+                qint64 remainingSeconds = remainingLayers * averageLayerTime;
+
+                QDateTime finishTime = QDateTime::currentDateTime().addSecs(remainingSeconds);
+
+                QString remainingStr = QString("%1h %2m").arg(remainingSeconds / 3600).arg((remainingSeconds % 3600) / 60);
+                emit remainingTimeUpdate(tr("~%1 remaining (finishes at %2)").arg(remainingStr).arg(finishTime.toString("h:mm ap")));
+                
+                lastLayer = currentLayer;
+            }
+
+            emit statusUpdate(statusText, currentLayer, totalLayers, printInfo["Filename"].toString());
         }
         // CASE 2: DOWNLOADING FILE (Only if busy and there is network activity)
         else if (currentStatus == 1 && (transferStatus == 1 || (fileInfo.contains("DownloadOffset") && fileInfo["DownloadOffset"].toDouble() > 0)))
@@ -334,6 +375,10 @@ void SaturnBackend::processPublish(const QString &topic, const QByteArray &paylo
         {
             emit statusUpdate(tr("Ready"), 0, 0, "");
             emit uploadProgress(0);
+            layerTimes.clear(); // Reset time calculation
+            lastLayer = -1;
+            emit remainingTimeUpdate("");
+
 
             // If a previous transfer finished successfully, notify the UI
             if (transferStatus == 2)

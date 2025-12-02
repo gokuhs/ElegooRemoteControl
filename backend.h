@@ -9,6 +9,7 @@
 #include <QMap>
 #include <QJsonObject>
 #include <QFile>
+#include <QDateTime>
 #include "protocol.h"
 #include <QNetworkInterface>
 
@@ -65,6 +66,12 @@ signals:
      * @param filename The name of the currently loaded file.
      */
     void statusUpdate(QString status, int layer, int totalLayers, QString filename);
+
+    /**
+     * @brief Emitted when the estimated remaining print time is updated.
+     * @param time A string representing the estimated time remaining (e.g., "1h 23m").
+     */
+    void remainingTimeUpdate(const QString &time);
 
     /**
      * @brief Emitted to provide a general log message for display.
@@ -142,6 +149,11 @@ private:
     QString currentFileMd5;             ///< MD5 checksum of the file being uploaded.
     bool shouldAutoPrint = false;       ///< Flag to indicate if printing should start after upload.
     QString uploadedFilename;           ///< Name of the last successfully uploaded file.
+
+    // Time Estimation
+    QDateTime layerStartTime;   ///< Timestamp for when the current layer started.
+    QList<double> layerTimes;   ///< A list of times (in seconds) for the last few layers.
+    int lastLayer = -1;         ///< The last layer number reported by the printer.
 
     // Ports
     const quint16 PORT_UDP_LISTEN = 0;    ///< Listen on any available UDP port for discovery responses.
