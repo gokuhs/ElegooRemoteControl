@@ -53,6 +53,13 @@ private:
     QString uploadFilePath;
     int nextPackId = 1;
     QString printerMainboardID;
+    // Mapa para guardar IP -> ID (UUID) detectados en el escaneo
+    QMap<QString, QString> discoveredIds;
+
+    // ID de la impresora conectada actualmente (para rellenar el campo "Id" del JSON)
+    QString currentPrinterId;
+
+    QString currentFileMd5;
 
     const quint16 PORT_UDP_LISTEN = 0;
     const quint16 PORT_MQTT_FIXED = 9090;
@@ -65,8 +72,13 @@ private:
     void processPublish(const QString &topic, const QByteArray &payload);
 
     // Comandos Saturn
-    void sendSaturnCommand(int cmdId, const QJsonObject &data);
+    void sendSaturnCommand(int cmdId, const QJsonValue &data);
     QString randomHexStr(int length);
+
+    bool shouldAutoPrint = false; // <--- Añadir esta variable
+    QString uploadedFilename;     // <--- Para recordar qué archivo imprimir
+
+    void sendHandshake();
 
     // Función auxiliar para encontrar nuestra IP en la misma subred que la impresora
     QHostAddress findMyIpForTarget(const QString &targetIpStr)

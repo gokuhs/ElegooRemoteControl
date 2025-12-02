@@ -4,6 +4,7 @@
 #include <QFileDialog>
 #include <QStackedWidget>
 #include <QMessageBox>
+#include <QApplication>
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
@@ -23,7 +24,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 
     connect(backend, &SaturnBackend::statusUpdate, this, &MainWindow::updateStatus);
 
-    connect(backend, &SaturnBackend::uploadProgress, progressBar, &QProgressBar::setValue);
+    connect(backend, &SaturnBackend::uploadProgress, [this](int percent)
+            {
+    progressBar->setValue(percent);
+    progressBar->setFormat(QString("Subiendo: %1%").arg(percent)); });
 
     connect(backend, &SaturnBackend::logMessage, [](QString msg)
             { qDebug() << "LOG:" << msg; });
@@ -113,10 +117,17 @@ void MainWindow::onUploadClicked()
     QString fileName = QFileDialog::getOpenFileName(this, "Abrir Archivo", "", "Archivos Goo (*.goo *.ctb)");
     if (!fileName.isEmpty())
     {
-        // Preguntar si imprimir
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Imprimir", "¿Quieres empezar a imprimir inmediatamente después de subir?",
                                       QMessageBox::Yes | QMessageBox::No);
+
+        // FEEDBACK INMEDIATO
+        lblStatus->setText("Estado: PREPARANDO SUBIDA...");
+        progressBar->setValue(0);
+        progressBar->setFormat("Calculando MD5...");
+
+        // Procesamos eventos para que la UI se actualice antes de que el backend se congele calculando MD5
+        QApplication::processEvents();
 
         backend->uploadAndPrint(fileName, reply == QMessageBox::Yes);
     }
@@ -124,16 +135,33 @@ void MainWindow::onUploadClicked()
 
 void MainWindow::updateStatus(QString status, int layer, int total, QString file)
 {
-    lblStatus->setText("Estado: " + status);
-    if (total > 0)
+    // Si el estado contiene "RECIBIENDO" o "Subiendo", cambiamos el color o el formato
+    if (status.contains("RECIBIENDO") || status.contains("Subiendo"))
     {
+        lblStatus->setText("Estado: " + status);
+        lblStatus->setStyleSheet("font-weight: bold; color: orange;");
+        lblFile->setText("Archivo: " + file);
+        // La barra de progreso se controla via el signal uploadProgress, no aquí
+    }
+    else if (total > 0)
+    {
+        // Estado IMPRIMIENDO
+        lblStatus->setText("Estado: " + status);
+        lblStatus->setStyleSheet("font-weight: bold; color: green;");
         lblFile->setText(QString("Archivo: %1 (Capa %2/%3)").arg(file).arg(layer).arg(total));
         progressBar->setValue((layer * 100) / total);
+        progressBar->setFormat("%p% (Imprimiendo)");
     }
     else
     {
+        // Estado IDLE
+        lblStatus->setText("Estado: " + status);
+        lblStatus->setStyleSheet("color: black;");
         lblFile->setText("Archivo: " + file);
-        if (status == "IDLE")
+        if (status.contains("IDLE"))
+        {
             progressBar->setValue(0);
+            progressBar->setFormat("%p%");
+        }
     }
 }
