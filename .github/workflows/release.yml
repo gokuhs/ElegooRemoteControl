@@ -1,127 +1,130 @@
-name: Build and Release
+name: Release
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+env:
+  VERSION: ${{ github.ref_name }}
 
 jobs:
-  build-linux:
-    name: Build Linux (AppImage)
-    runs-on: ubuntu-latest
+  build_and_release:
+    name: Build and Release on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            qt_arch: 'gcc_64'
+            asset_name: 'ElegooRemoteControl-linux-x86_64.AppImage'
+          - os: macos-latest
+            qt_arch: 'clang_64'
+            asset_name: 'ElegooRemoteControl-macos-x86_64.dmg'
+          - os: windows-latest
+            qt_arch: 'win64_msvc2019_64'
+            asset_name: 'ElegooRemoteControl-windows-x86_64.zip'
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
-          version: '6.5.3'
-          arch: 'gcc_64'
-          modules: 'qtbase qttools'
-          aqt-tool-concurrency: '4'
-          
-      - name: Install Linux dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev
+          version: '6.4.0'
+          arch: ${{ matrix.qt_arch }}
 
       - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build with CMake
-        run: cmake --build build --config Release --parallel
-
-      - name: Download linuxdeployqt
+        if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
-          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
+          if [[ "${{ runner.os }}" == "Linux" ]]; then 
+            sudo apt-get update 
+            sudo apt-get install -y patchelf fakeroot gettext-base 
+          fi 
+          if [[ "${{ runner.os }}" == "macOS" ]]; then 
+            # Force Unix Makefiles so the .app is created at build/ElegooRemoteControl.app 
+            cmake -S . -B build -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64" -DCMAKE_PREFIX_PATH="${Qt6_DIR}" 
+          else 
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release 
+          fi
 
-      - name: Build AppImage
+      - name: Configure CMake Windows
+        if: runner.os == 'Windows'
         run: |
-          # linuxdeployqt necesita que las traducciones (.qm) estén en el lugar correcto
-          mkdir -p build/translations
-          cp build/translations/*.qm build/
-          # Ejecutar linuxdeployqt
-          ./linuxdeployqt-continuous-x86_64.AppImage build/ElegooRemoteControl -appimage -bundle-non-qt-libs
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
 
-      - name: Upload AppImage to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./ElegooRemoteControl-x86_64.AppImage
-          asset_name: ElegooRemoteControl-Linux-x86_64.AppImage
-          asset_content_type: application/x-appimage
-
-  build-windows:
-    name: Build Windows (MSVC)
-    runs-on: windows-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.5.3'
-          host: 'windows'
-          target: 'desktop'
-          arch: 'win64_msvc2019_64'
-
-      - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
+        
       - name: Build with CMake
-        run: cmake --build build --config Release --parallel
-
-      - name: Package Windows build
         run: |
-          # Crear un directorio para el paquete
-          mkdir release
-          # Copiar el ejecutable
-          cp build/Release/ElegooRemoteControl.exe release/
-          # Copiar las traducciones
-          mkdir release/translations
-          cp build/Release/saturn_es.qm release/translations/
-          # Usar windeployqt para copiar todas las DLLs de Qt necesarias
-          windeployqt.exe --release --dir release release/ElegooRemoteControl.exe
-          # Crear un archivo ZIP
-          7z a -tzip ElegooRemoteControl-Windows-x64.zip ./release/*
+          cmake --build build --config Release
 
-      - name: Upload Windows ZIP to Release
-        uses: actions/upload-release-asset@v1
+
+      - name: Prepare desktop and icon
+        if: runner.os == 'Linux'
+        run: |
+           mkdir -p build
+           if [ -f packaging/default.desktop.in ]; then 
+            envsubst < packaging/default.desktop.in > build/default.desktop 
+           else 
+            cp packaging/default.desktop build/default.desktop 
+           fi
+           cp packaging/elegoo-remote-control.png build/elegoo-remote-control.png
+
+      - name: Package application (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
+          chmod a+x linuxdeployqt.AppImage
+          # Ensure build/ exists and run linuxdeployqt from there so only the produced AppImage appears inside build/
+          mkdir -p build
+          pushd build
+          ../linuxdeployqt.AppImage default.desktop -appimage
+          APPIMAGE=$(ls -1t *.AppImage 2>/dev/null | head -n1)
+          if [ -z "$APPIMAGE" ]; then
+            echo "No AppImage found in build/ after linuxdeployqt"
+            ls -la || true
+            popd
+            exit 1
+          fi
+          mv "$APPIMAGE" "../${{ matrix.asset_name }}"
+          popd
+      
+      - name: Package application (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          APP=""
+          if [ -d build/ElegooRemoteControl.app ]; then
+            APP="build/ElegooRemoteControl.app"
+          elif [ -d build/Release/ElegooRemoteControl.app ]; then
+            APP="build/Release/ElegooRemoteControl.app"
+          elif [ -d build/Build/Products/Release/ElegooRemoteControl.app ]; then
+            APP="build/Build/Products/Release/ElegooRemoteControl.app"
+          else
+            echo "Could not find the .app bundle. Listing build/ for debugging:"
+            ls -la build || true
+            exit 1
+          fi
+          macdeployqt "$APP" -dmg
+          # Move the first produced DMG to the expected matrix asset name
+          DMG=$(ls build/*.dmg 2>/dev/null | head -n1)
+          if [ -z "$DMG" ]; then
+            echo "No DMG found in build/ after macdeployqt"
+            ls -la build || true
+            exit 1
+          fi
+          mv "$DMG" "${{ matrix.asset_name }}"
+
+      - name: Package application (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          windeployqt --release build/Release/ElegooRemoteControl.exe
+          7z a ${{ matrix.asset_name }} ./build/Release/*
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./ElegooRemoteControl-Windows-x64.zip
-          asset_name: ElegooRemoteControl-Windows-x64.zip
-          asset_content_type: application/zip
-
-  build-macos:
-    name: Build macOS
-    runs-on: macos-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.5.3'
-          host: 'mac'
-          target: 'desktop'
-
-      - name: Configure CMake
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-
-      - name: Build with CMake
-        run: cmake --build build --config Release --parallel
-
-      - name: Package macOS build
-        run: macdeployqt build/ElegooRemoteControl.app -dmg
-
-      - name: Upload macOS DMG to Release
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: build/ElegooRemoteControl.dmg
-          asset_name: ElegooRemoteControl-macOS.dmg
-          asset_content_type: application/x-apple-diskimage
+          files: ${{ matrix.asset_name }}

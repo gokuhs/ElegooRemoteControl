@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=ElegooRemoteControl
+Exec=ElegooRemoteControl
+Type=Application
+Version=1.0
+Icon=elegoo-remote-control
+Categories=Utility
+Comment=Elegoo Remote Control

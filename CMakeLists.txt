@@ -31,8 +31,8 @@ set(HEADERS
     protocol.h
 )
 
-add_executable(ElegooRemoteControl ${SOURCES} ${HEADERS})
+add_executable(ElegooRemoteControl MACOSX_BUNDLE ${SOURCES} ${HEADERS})
 
-qt_add_translations(ElegooRemoteControl TS_FILES ${TS_FILES})
+qt_add_translations(ElegooRemoteControl ${TS_FILES})
 
 target_link_libraries(ElegooRemoteControl PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)
