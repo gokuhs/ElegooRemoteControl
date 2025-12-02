@@ -14,14 +14,10 @@
  * @param argv The array of command-line arguments.
  * @return The exit code of the application.
  */
-int main(int argc, char *argv[]) {
-    // Initialize the Qt application
+int main(int argc, char *argv[])
+{
     QApplication app(argc, argv);
-
-    // Create and configure the main window
     MainWindow w;
     w.show();
-    
-    // Start the application's event loop
     return app.exec();
 }

@@ -8,6 +8,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QComboBox>
+#include <QTranslator>
 #include "backend.h"
 
 /**
@@ -27,7 +28,14 @@ public:
      * @brief Constructs the main window.
      * @param parent The parent widget.
      */
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(QWidget *parent = nullptr);
+
+protected:
+    /**
+     * @brief Handles language change events to re-translate the UI.
+     * @param event The change event.
+     */
+    void changeEvent(QEvent *event) override;
 
 private slots:
     /**
@@ -90,6 +98,7 @@ private:
     QString getIconPathForModel(const QString &modelName);
 
     SaturnBackend *backend; ///< The backend logic handler.
+    QTranslator translator; ///< The translator for i18n.
 
     // UI Elements
     QWidget *scanPage;      ///< The widget acting as the first page for printer discovery.
