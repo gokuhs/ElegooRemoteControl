@@ -51,6 +51,10 @@ private:
     QString uploadFilePath;
     int nextPackId = 1;
     QString printerMainboardID;
+
+    const quint16 PORT_UDP_LISTEN = 0;
+    const quint16 PORT_MQTT_FIXED = 9090;
+    const quint16 PORT_HTTP_FIXED = 9091;
     
     // Helpers MQTT
     void handleMqttPacket(const QByteArray &data, QTcpSocket *socket);
