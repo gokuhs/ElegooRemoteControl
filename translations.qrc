@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/i18n">
+        <file>translations/saturn_es.ts</file>
+    </qresource>
+</RCC>
