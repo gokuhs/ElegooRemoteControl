@@ -4,8 +4,8 @@
 <context>
     <name>MainWindow</name>
     <message>
-        <source>Saturn Controller C++</source>
-        <translation>Saturn Controller C++</translation>
+        <source>Elegoo Remote Control</source>
+        <translation>Elegoo Remote Control</translation>
     </message>
     <message>
         <source>Select a Elegoo printer:</source>

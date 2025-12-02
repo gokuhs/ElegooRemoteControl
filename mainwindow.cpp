@@ -150,7 +150,7 @@ void MainWindow::changeEvent(QEvent *event)
  */
 void MainWindow::retranslateUi()
 {
-    setWindowTitle(tr("Saturn Controller C++"));
+    setWindowTitle(tr("Elegoo Remote Control"));
     scanPageLabel->setText(tr("Select a Elegoo printer:"));
     btnScan->setText(tr("Scan for Printers"));
     ipInput->setPlaceholderText(tr("Manual IP (e.g., 192.168.1.50)"));

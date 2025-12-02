@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(SaturnControl LANGUAGES CXX)
+project(ElegooRemoteControl LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -31,8 +31,8 @@ set(HEADERS
     protocol.h
 )
 
-add_executable(SaturnControl ${SOURCES} ${HEADERS})
+add_executable(ElegooRemoteControl ${SOURCES} ${HEADERS})
 
-qt_add_translations(SaturnControl TS_FILES ${TS_FILES})
+qt_add_translations(ElegooRemoteControl TS_FILES ${TS_FILES})
 
-target_link_libraries(SaturnControl PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)
+target_link_libraries(ElegooRemoteControl PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)

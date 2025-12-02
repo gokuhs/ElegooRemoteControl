@@ -1,6 +1,6 @@
-# SaturnControl (C++ Cassini Port)
+# ElegooRemoteControl (C++ Cassini Port)
 
-**SaturnControl** is a native C++ GUI application designed to control and monitor Elegoo Saturn 3D printers over the network. 
+**ElegooRemoteControl** is a native C++ GUI application designed to control and monitor Elegoo Saturn 3D printers over the network. 
 
 This project is a high-performance port of the original Python tool **[Cassini](https://github.com/vladimirv/cassini)**. It replicates the complex network logic (custom MQTT broker + HTTP server handshake) required to communicate with the printer's mainboard, but wrapped in a modern, easy-to-use Qt 6 interface.
 
@@ -30,8 +30,8 @@ sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools qt6-l10n-
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/gokuhs/SaturnControl.git
-    cd SaturnControl
+    git clone https://github.com/gokuhs/ElegooRemoteControl.git
+    cd ElegooRemoteControl
     ```
 
 2.  **Create a build directory and run CMake:**
@@ -56,11 +56,12 @@ sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools qt6-l10n-
 
 5.  **Run the application:**
     After compiling, the `build/translations` directory will contain the `saturn_es.qm` file. The application executable needs to find this file at runtime. Make sure the `translations` directory is placed next to the `SaturnControl` executable.
+    After compiling, the `build/translations` directory will contain the `saturn_es.qm` file. The application executable needs to find this file at runtime. Make sure the `translations` directory is placed next to the `ElegooRemoteControl` executable.
     
     A simple way to run it is to copy the translations folder into the build directory where the executable is:
     ```bash
     cp -r ../translations . 
-    ./SaturnControl
+    ./ElegooRemoteControl
     ```
 
 ## Credits & License
@@ -70,9 +71,9 @@ sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools qt6-l10n-
 
 ---
 
-# SaturnControl (Versión en Español)
+# ElegooRemoteControl (Versión en Español)
 
-**SaturnControl** es una aplicación nativa en C++ con interfaz gráfica diseñada para controlar y monitorizar impresoras 3D Elegoo Saturn a través de la red local.
+**ElegooRemoteControl** es una aplicación nativa en C++ con interfaz gráfica diseñada para controlar y monitorizar impresoras 3D Elegoo Saturn a través de la red local.
 
 Este proyecto es un *port* de alto rendimiento de la herramienta original en Python llamada **[Cassini](https://github.com/vladimirv/cassini)**. Replica la compleja lógica de red (*Broker* MQTT personalizado + *Handshake* de servidor HTTP) necesaria para comunicarse con la placa base de la impresora, pero envuelta en una interfaz moderna y fácil de usar basada en Qt 6.
 
@@ -101,8 +102,8 @@ sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools qt6-l10n-
 
 1.  **Clona el repositorio:**
     ```bash
-    git clone https://github.com/gokuhs/SaturnControl.git
-    cd SaturnControl
+    git clone https://github.com/gokuhs/ElegooRemoteControl.git
+    cd ElegooRemoteControl
     ```
 
 2.  **Crea un directorio de compilación y ejecuta CMake:**
@@ -127,11 +128,12 @@ sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools qt6-l10n-
 
 5.  **Ejecuta la aplicación:**
     Después de compilar, el directorio `build/translations` contendrá el archivo `saturn_es.qm`. El ejecutable de la aplicación necesita encontrar este archivo en tiempo de ejecución. Asegúrate de que el directorio `translations` esté junto al ejecutable `SaturnControl`.
+    Después de compilar, el directorio `build/translations` contendrá el archivo `saturn_es.qm`. El ejecutable de la aplicación necesita encontrar este archivo en tiempo de ejecución. Asegúrate de que el directorio `translations` esté junto al ejecutable `ElegooRemoteControl`.
 
     Una forma sencilla de ejecutarlo es copiar la carpeta de traducciones al directorio de compilación donde se encuentra el ejecutable:
     ```bash
     cp -r ../translations . 
-    ./SaturnControl
+    ./ElegooRemoteControl
     ```
 
 ## Créditos y Licencia

@@ -15,7 +15,7 @@ Makefile
 qrc_*.cpp
 
 # Executables
-SaturnControl
+ElegooRemoteControl
 *.exe
 *.o
 *.obj
