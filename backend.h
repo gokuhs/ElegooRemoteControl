@@ -24,12 +24,13 @@ public:
     void printExistingFile(const QString &filename);
 
 signals:
-    void printerFound(QString ip, QString name);
     void statusUpdate(QString status, int layer, int totalLayers, QString filename);
     void logMessage(QString msg);
     void uploadProgress(int percent);
     void connectionReady(); // Cuando la impresora se conecta a nuestro servidor MQTT
     void fileReadyToPrint(QString filename);
+    void printerFound(QString ip, QString name, QString model);
+    void modelDetected(QString modelName);
 
 private slots:
     // Discovery

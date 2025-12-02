@@ -41,6 +41,15 @@ private:
     QPushButton *btnPrintLast; // <--- EL NUEVO BOTÓN
     QString lastReadyFile;     // <--- Para recordar qué archivo imprimir
 
+    // Mapa para recordar el modelo de cada IP:  "192.168.1.50" -> "ELEGOO Saturn 3 Ultra"
+    QMap<QString, QString> ipToModel;
+
+    // Helper para elegir la imagen
+    QString getIconPathForModel(const QString &modelName);
+
+    // Elemento de imagen (para poder cambiarlo luego)
+    QLabel *imgLabel;
+
     void setupUi();
 };
 

@@ -11,10 +11,18 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     backend = new SaturnBackend(this);
     setupUi();
 
-    connect(backend, &SaturnBackend::printerFound, [this](QString ip, QString name)
+    connect(backend, &SaturnBackend::modelDetected, [this](QString model)
             {
-        printerList->addItem(name + " (" + ip + ")");
-        ipInput->setText(ip); });
+        // 1. Guardamos para el futuro
+        QString ip = ipInput->text();
+        if (!ip.isEmpty()) ipToModel.insert(ip, model);
+        
+        // 2. Actualizamos la imagen
+        QString imagePath = getIconPathForModel(model);
+        QPixmap pixmap(imagePath);
+        if (!pixmap.isNull()) {
+            imgLabel->setPixmap(pixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        } });
 
     connect(backend, &SaturnBackend::connectionReady, [this]()
             { qobject_cast<QStackedWidget *>(centralWidget())->setCurrentWidget(controlPage); });
@@ -69,7 +77,7 @@ void MainWindow::setupUi()
     QVBoxLayout *layout2 = new QVBoxLayout(controlPage); // <--- Esta línea se declaraba dos veces antes
 
     // Configuración de la imagen (Usando recursos)
-    QLabel *imgLabel = new QLabel();
+    imgLabel = new QLabel();
     QPixmap pixmap(":/resources/images/saturn.png");
 
     if (!pixmap.isNull())
@@ -122,10 +130,21 @@ void MainWindow::onConnectClicked()
 {
     QString ip = ipInput->text();
     if (ip.isEmpty())
-    {
-        QMessageBox::warning(this, "Error", "Introduce una IP válida");
         return;
+
+    // Buscamos el modelo en el mapa
+    QString model = ipToModel.value(ip, "Unknown");
+
+    // Elegimos la imagen
+    QString imagePath = getIconPathForModel(model);
+
+    // Actualizamos el label de imagen
+    QPixmap pixmap(imagePath);
+    if (!pixmap.isNull())
+    {
+        imgLabel->setPixmap(pixmap.scaled(300, 300, Qt::KeepAspectRatio, Qt::SmoothTransformation));
     }
+
     backend->connectToPrinter(ip);
 }
 
@@ -211,4 +230,22 @@ void MainWindow::onPrintLastClicked()
         btnPrintLast->setVisible(false);
         backend->printExistingFile(lastReadyFile);
     }
+}
+
+QString MainWindow::getIconPathForModel(const QString &modelName)
+{
+    // Normalizamos a minúsculas para buscar más fácil
+    QString m = modelName.toLower();
+
+    if (m.contains("saturn 3 ultra"))
+    {
+        return ":/resources/images/saturn3ultra.png";
+    }
+    else if (m.contains("saturn 3"))
+    {
+        return ":/resources/images/saturn2.png";
+    }
+
+    // Imagen por defecto si no reconocemos el modelo
+    return ":/resources/images/default.png";
 }

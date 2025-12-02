@@ -40,24 +40,25 @@ void SaturnBackend::onUdpReadyRead()
         {
             QJsonObject root = doc.object();
 
-            // Extraer datos
             QString ip = datagram.senderAddress().toString();
-            // Normalizar IP (a veces Qt devuelve ::ffff:192.168.1.X)
             if (ip.startsWith("::ffff:"))
                 ip = ip.mid(7);
 
-            QString name = root["Data"].toObject()["Attributes"].toObject()["Name"].toString();
+            QJsonObject attrs = root["Data"].toObject()["Attributes"].toObject();
+            QString name = attrs["Name"].toString();
 
-            // --- NUEVO: CAPTURAR EL ID (UUID) ---
+            // --- NUEVO: Capturar el Modelo ---
+            QString model = attrs["MachineName"].toString();
+            // ---------------------------------
+
             QString uuid = root["Id"].toString();
             if (!uuid.isEmpty())
             {
                 discoveredIds.insert(ip, uuid);
             }
-            // ------------------------------------
 
-            // Emitimos solo si es nuevo o para actualizar UI
-            emit printerFound(ip, name);
+            // Emitimos el modelo también
+            emit printerFound(ip, name, model);
         }
     }
 }
@@ -229,6 +230,20 @@ void SaturnBackend::processPublish(const QString &topic, const QByteArray &paylo
             {
                 this->currentPrinterId = incomingUuid;
                 emit logMessage("¡AUTO-DETECTADO! UUID recuperado via MQTT: " + this->currentPrinterId);
+            }
+        }
+    }
+
+    if (topic.contains("/sdcp/attributes/"))
+    {
+        QJsonObject attrs = root["Data"].toObject()["Attributes"].toObject();
+        if (attrs.contains("MachineName"))
+        {
+            QString model = attrs["MachineName"].toString();
+            if (!model.isEmpty())
+            {
+                emit logMessage("Modelo detectado via MQTT: " + model);
+                emit modelDetected(model);
             }
         }
     }
