@@ -111,6 +111,14 @@ File: </source>
 
 Archivo: </translation>
     </message>
+    <message>
+        <source>Remaining time: Calculating...</source>
+        <translation>Tiempo restante: Calculando...</translation>
+    </message>
+    <message>
+        <source>Remaining time: </source>
+        <translation>Tiempo restante: </translation>
+    </message>
 </context>
 <context>
     <name>SaturnBackend</name>
@@ -149,6 +157,14 @@ Archivo: </translation>
     <message>
         <source>Unknown</source>
         <translation>Desconocido</translation>
+    </message>
+    <message>
+        <source>Calculating...</source>
+        <translation>Calculando...</translation>
+    </message>
+    <message>
+        <source>~%1 remaining (finishes at %2)</source>
+        <translation>~%1 restante (finaliza a las %2)</translation>
     </message>
 </context>
 </TS>
