@@ -17,6 +17,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     backend = new SaturnBackend(this);
     setupUi();
 
+    retranslateUi();
+
     // --- UI Signal/Slot Connections ---
     connect(backend, &SaturnBackend::modelDetected, [this](QString model)
             {
