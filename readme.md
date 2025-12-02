@@ -101,7 +101,7 @@ sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools qt6-l10n-
 
 1.  **Clona el repositorio:**
     ```bash
-    git clone https://github.com/tuusuario/SaturnControl.git
+    git clone https://github.com/gokuhs/SaturnControl.git
     cd SaturnControl
     ```
 
