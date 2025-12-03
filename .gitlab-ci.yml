@@ -13,7 +13,7 @@ build_linux:
   rules:
     - if: $CI_COMMIT_TAG # Compile only Release
   before_script:
-    - apt-get update && apt-get install -y build-essential cmake git python3-pip wget file libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 gettext-base libglib2.0-0    - pip3 install aqtinstall
+    - apt-get update && apt-get install -y build-essential cmake git python3-pip wget file libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 gettext-base libglib2.0-0    
     - pip3 install aqtinstall
     - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
     - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
