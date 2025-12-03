@@ -14,7 +14,7 @@ build_linux:
     - if: $CI_COMMIT_TAG # Compile only Release
   before_script:
     - apt-get update
-    # SE RESTAURA 'strace' y 'file' para diagnóstico
+    # Instalamos dependencias incluyendo strace y file
     - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev libnss3 libasound2 fuse desktop-file-utils strace
     - pip3 install aqtinstall
     - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
@@ -26,37 +26,37 @@ build_linux:
     - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     - cmake --build build --config Release
     
-    # 2. Preparar iconos
-    - if [ -f packaging/default.desktop.in ]; then envsubst < packaging/default.desktop.in > build/default.desktop; else cp packaging/default.desktop build/default.desktop; fi
+    # 2. Preparar iconos (Entrecomillado para evitar errores de sintaxis)
+    - 'if [ -f packaging/default.desktop.in ]; then envsubst < packaging/default.desktop.in > build/default.desktop; else cp packaging/default.desktop build/default.desktop; fi'
     - cp packaging/elegoo-remote-control.png build/elegoo-remote-control.png
     
-    # 3. Descargar herramientas (Separamos los binarios para controlar el proceso)
-    - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
-    - wget -c -nv "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool.AppImage
+    # 3. Descargar herramientas
+    - 'wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage'
+    - 'wget -c -nv "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool.AppImage'
     - chmod a+x linuxdeployqt.AppImage appimagetool.AppImage
     
     # 4. Preparación de entorno
     - export VERSION=$(git describe --tags --always || echo "v0.0.0")
     - cd build
-    - echo "Generando AppDir para versión $VERSION..."
+    - echo "Generando AppDir para version $VERSION..."
     
-    # Variables críticas para Docker
+    # Variables críticas
     - unset QT_PLUGIN_PATH
     - unset LD_LIBRARY_PATH
     - unset QML2_IMPORT_PATH
-    - export APPIMAGE_EXTRACT_AND_RUN=1  # Evita errores de montaje FUSE
-    - export NO_STRIP=1                  # Variable de entorno alternativa para evitar stripping
+    - export APPIMAGE_EXTRACT_AND_RUN=1
+    - export NO_STRIP=1
     
     # ---------------------------------------------------------
-    # PASO A: Solo Bundling (Copiar librerías y plugins a ./AppDir)
+    # PASO A: Solo Bundling (Copiar librerías a ./AppDir)
     # ---------------------------------------------------------
-    # Quitamos el flag '-appimage' para que NO intente generar el fichero final todavía.
-    # Usamos strace. Mantenemos -no-strip.
+    # NOTA: He entrecomillado toda la línea del comando strace para evitar el error de YAML
     - echo "Ejecutando linuxdeployqt (Fase BUNDLE)..."
-    - strace -f -s 2000 -o trace_bundle.txt ${CI_PROJECT_DIR}/linuxdeployqt.AppImage default.desktop -bundle-non-qt-libs -no-strip -unsupported-allow-new-glibc -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2
+    - 'strace -f -s 2000 -o trace_bundle.txt ${CI_PROJECT_DIR}/linuxdeployqt.AppImage default.desktop -bundle-non-qt-libs -no-strip -unsupported-allow-new-glibc -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2'
     
-    # Verificación intermedia
-    - if [ ! -d "AppDir" ]; then echo "CRITICAL: No se creó el directorio AppDir. Falló linuxdeployqt."; exit 1; fi
+    # Verificación intermedia (Entrecomillado por los dos puntos en el echo)
+    - 'if [ ! -d "AppDir" ]; then echo "CRITICAL: No se creó el directorio AppDir. Falló linuxdeployqt."; exit 1; fi'
+    
     - echo "Bundle completado. Contenido de AppDir:"
     - ls -R AppDir | head -n 20
     
@@ -64,8 +64,7 @@ build_linux:
     # PASO B: Empaquetado final (Convertir ./AppDir en .AppImage)
     # ---------------------------------------------------------
     - echo "Ejecutando appimagetool (Fase PACKAGE)..."
-    # Usamos appimagetool explícitamente.
-    - ${CI_PROJECT_DIR}/appimagetool.AppImage AppDir ElegooRemoteControl-linux-x86_64.AppImage
+    - '${CI_PROJECT_DIR}/appimagetool.AppImage AppDir ElegooRemoteControl-linux-x86_64.AppImage'
     
     # 6. Validar resultado
     - ls -lh *.AppImage
@@ -74,7 +73,7 @@ build_linux:
     when: always
     paths:
       - build/ElegooRemoteControl-linux-x86_64.AppImage
-      - build/trace_bundle.txt  # Descarga esto si falla el Paso A
+      - build/trace_bundle.txt
 
 # 3. Publish Gitlab
 create_gitlab_release:
