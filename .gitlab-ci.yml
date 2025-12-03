@@ -13,7 +13,7 @@ build_linux:
   rules:
     - if: $CI_COMMIT_TAG # Compile only Release
   before_script:
-    - apt-get update && apt-get install -y build-essential cmake git python3-pip wget file libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 gettext-base libglib2.0-0 patchelf libfuse2
+    - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1
     - pip3 install aqtinstall
     - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
     - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
@@ -31,8 +31,8 @@ build_linux:
     - chmod a+x linuxdeployqt.AppImage
     - ./linuxdeployqt.AppImage --appimage-extract
     - export PATH=$(pwd)/squashfs-root/usr/bin:$PATH
-    - cd build
-    - ../squashfs-root/usr/bin/linuxdeployqt default.desktop -appimage -unsupported-allow-new-glibc
+    # AÑADIDO: -verbose=2
+    - ../squashfs-root/usr/bin/linuxdeployqt default.desktop -appimage -unsupported-allow-new-glibc -verbose=2
     - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
   artifacts:
     paths:
