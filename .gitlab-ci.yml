@@ -1,0 +1,56 @@
+stages:
+  - sync
+  - build
+  - release
+
+variables:
+  QT_VERSION: "6.4.0"
+
+# 2. Local Job
+build_linux:
+  stage: build
+  image: ubuntu:22.04
+  rules:
+    - if: $CI_COMMIT_TAG # Compile only Release
+  before_script:
+    - apt-get update && apt-get install -y build-essential cmake git python3-pip wget file libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 gettext-base
+    - pip3 install aqtinstall
+    - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
+    - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
+    - export Qt6_DIR=/opt/qt/6.4.0/gcc_64
+  script:
+    # compile
+    - mkdir -p build
+    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    - cmake --build build --config Release
+    # prepare AppImage
+    - if [ -f packaging/default.desktop.in ]; then envsubst < packaging/default.desktop.in > build/default.desktop; else cp packaging/default.desktop build/default.desktop; fi
+    - cp packaging/elegoo-remote-control.png build/elegoo-remote-control.png
+    # Generate AppImage
+    - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
+    - chmod a+x linuxdeployqt.AppImage
+    - ./linuxdeployqt.AppImage --appimage-extract
+    - export PATH=$(pwd)/squashfs-root/usr/bin:$PATH
+    - cd build
+    - ../squashfs-root/usr/bin/linuxdeployqt default.desktop -appimage -unsupported-allow-new-glibc
+    - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
+  artifacts:
+    paths:
+      - build/ElegooRemoteControl-linux-x86_64.AppImage
+
+# 3. Publish Gitlab
+create_gitlab_release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "Creando release en GitLab Local..."
+  release:
+    name: "Release $CI_COMMIT_TAG"
+    description: "Versión Linux compilada localmente."
+    tag_name: "$CI_COMMIT_TAG"
+    assets:
+      links:
+        - name: "Linux AppImage"
+          url: "${CI_PROJECT_URL}/-/jobs/${CI_JOB_ID}/artifacts/file/build/ElegooRemoteControl-linux-x86_64.AppImage"
