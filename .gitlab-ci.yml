@@ -12,45 +12,41 @@ build_linux:
   stage: build
   image: ubuntu:22.04
   rules:
-    - if: $CI_COMMIT_TAG
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG # Compile only Release
   before_script:
     - apt-get update
-    # Dependencias: Mantenemos las mismas porque son necesarias para Qt y la compilación
     - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev libnss3 libasound2 fuse desktop-file-utils
     - pip3 install aqtinstall
     - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
-    # IMPORTANTE: Definimos las variables para que el nuevo plugin encuentre Qt
     - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
     - export Qt6_DIR=/opt/qt/6.4.0/gcc_64
     - export QMAKE=/opt/qt/6.4.0/gcc_64/bin/qmake
   script:
-    # 1. Configuración y Compilación
+    # 1. Config and compile
     - mkdir -p build
     - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     - cmake --build build --config Release
     
-    # 2. Preparar iconos y .desktop
+    # 2.Prepare icons 
     - 'if [ -f packaging/default.desktop.in ]; then envsubst < packaging/default.desktop.in > build/default.desktop; else cp packaging/default.desktop build/default.desktop; fi'
     - cp packaging/elegoo-remote-control.png build/elegoo-remote-control.png
     
-    # 3. Descargar la NUEVA herramienta (linuxdeploy + plugin qt)
+    # 3. Download tools
     - 'wget -c -nv "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" -O linuxdeploy.AppImage'
     - 'wget -c -nv "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage" -O linuxdeploy-plugin-qt.AppImage'
     - chmod a+x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
     
-    # 4. Generar AppImage
+    # 4. Generate AppImage
     - cd build
     - export VERSION=$(git describe --tags --always || echo "v0.0.0")
     - echo "Generando AppImage con linuxdeploy (Moderno) para versión $VERSION..."
     
-    # Variables de entorno para que linuxdeploy no use FUSE
     - export APPIMAGE_EXTRACT_AND_RUN=1
     
-    # EJECUCIÓN MAESTRA (Con ruta absoluta en el icono):
+    # Excution
     - ../linuxdeploy.AppImage --appdir AppDir -d default.desktop -i "${CI_PROJECT_DIR}/build/elegoo-remote-control.png" -e ElegooRemoteControl -p qt --output appimage
     
-    # 5. Renombrar y mover
+    # 5. Move and rename
     - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
   artifacts:
     when: always
