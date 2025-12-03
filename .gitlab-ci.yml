@@ -25,7 +25,7 @@ build_linux:
     - export Qt6_DIR=/opt/qt/6.4.0/gcc_64
     - export QMAKE=/opt/qt/6.4.0/gcc_64/bin/qmake
   script:
-    # 1. Configuración y Compilación (Igual que antes)
+    # 1. Configuración y Compilación
     - mkdir -p build
     - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     - cmake --build build --config Release
@@ -35,9 +35,7 @@ build_linux:
     - cp packaging/elegoo-remote-control.png build/elegoo-remote-control.png
     
     # 3. Descargar la NUEVA herramienta (linuxdeploy + plugin qt)
-    # linuxdeploy: El orquestador
     - 'wget -c -nv "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage" -O linuxdeploy.AppImage'
-    # plugin-qt: El especialista en Qt (funciona con Qt6)
     - 'wget -c -nv "https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage" -O linuxdeploy-plugin-qt.AppImage'
     - chmod a+x linuxdeploy.AppImage linuxdeploy-plugin-qt.AppImage
     
@@ -49,18 +47,11 @@ build_linux:
     # Variables de entorno para que linuxdeploy no use FUSE
     - export APPIMAGE_EXTRACT_AND_RUN=1
     
-    # EJECUCIÓN MAESTRA:
-    # --appdir AppDir: Crea la carpeta
-    # -d: Archivo desktop
-    # -i: Icono
-    # -e: Ejecutable compilado
-    # -p qt: Usa el plugin de Qt (busca qmake automáticamente por la variable $QMAKE exportada arriba)
-    # --output appimage: Genera el archivo final
-    - ../linuxdeploy.AppImage --appdir AppDir -d default.desktop -i elegoo-remote-control.png -e ElegooRemoteControl -p qt --output appimage
+    # EJECUCIÓN MAESTRA (Con ruta absoluta en el icono):
+    - ../linuxdeploy.AppImage --appdir AppDir -d default.desktop -i "${CI_PROJECT_DIR}/build/elegoo-remote-control.png" -e ElegooRemoteControl -p qt --output appimage
     
     # 5. Renombrar y mover
     - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
-    
   artifacts:
     when: always
     paths:
