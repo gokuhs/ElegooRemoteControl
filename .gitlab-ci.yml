@@ -14,46 +14,42 @@ build_linux:
     - if: $CI_COMMIT_TAG # Compile only Release
   before_script:
     - apt-get update
-    # AÑADIDO: libxkbcommon-dev al final de la lista
-    - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev
+    # Añadimos libnss3 y libasound2 a la lista
+    - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev libnss3 libasound2
     - pip3 install aqtinstall
     - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
     - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
     - export Qt6_DIR=/opt/qt/6.4.0/gcc_64
   script:
-    # 1. Configuración y Compilación (Igual que antes)
+    # 1. Configuración y Compilación
     - mkdir -p build
     - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     - cmake --build build --config Release
     
-    # 2. Preparación de ficheros (Igual que antes)
+    # 2. Preparar iconos
     - if [ -f packaging/default.desktop.in ]; then envsubst < packaging/default.desktop.in > build/default.desktop; else cp packaging/default.desktop build/default.desktop; fi
     - cp packaging/elegoo-remote-control.png build/elegoo-remote-control.png
     
-    # 3. [DIAGNÓSTICO] Verificamos que el ejecutable está sano
-    - echo "--- DIAGNÓSTICO DE LIBRERÍAS ---"
-    - ldd build/ElegooRemoteControl
-    - echo "--------------------------------"
-
-    # 4. Descarga y extracción de LinuxDeployQt
-    - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
-    - chmod a+x linuxdeployqt.AppImage
-    - ./linuxdeployqt.AppImage --appimage-extract
-    - chmod a+x ${CI_PROJECT_DIR}/squashfs-root/usr/bin/linuxdeployqt
-
-    # 5. Entramos a build
-    - cd build
-    
-    # 6. Definimos la versión
+    # 3. Definir versión
     - export VERSION=$(git describe --tags --always || echo "v0.0.0")
     
-    # 7. GENERACIÓN DEL APPIMAGE (¡Con el truco 'offscreen'!)
+    # 4. Descargar herramienta
+    - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
+    - chmod a+x linuxdeployqt.AppImage
+    
+    # [IMPORTANTE] NO EXTRAER. Ejecutar directamente.
+    # El flag --appimage-extract-and-run es un truco por si FUSE falla, 
+    # pero intenta usar FUSE primero.
+    
+    - cd build
+    
+    # 5. Generar AppImage (Igual que en GitHub + parámetros extra)
     - echo "Generando AppImage versión $VERSION..."
     
-    # AÑADIMOS 'QT_QPA_PLATFORM=offscreen' AL PRINCIPIO DEL COMANDO
-    - QT_QPA_PLATFORM=offscreen ${CI_PROJECT_DIR}/squashfs-root/usr/bin/linuxdeployqt default.desktop -appimage -unsupported-allow-new-glibc -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2
+    # Usamos ruta absoluta al AppImage descargado arriba
+    - QT_QPA_PLATFORM=offscreen ${CI_PROJECT_DIR}/linuxdeployqt.AppImage default.desktop -appimage -unsupported-allow-new-glibc -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2
     
-    # 8. Renombrar
+    # 6. Renombrar
     - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
   artifacts:
     paths:
