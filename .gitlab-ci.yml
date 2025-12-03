@@ -20,20 +20,31 @@ build_linux:
     - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
     - export Qt6_DIR=/opt/qt/6.4.0/gcc_64
   script:
-    # compile
-    - mkdir -p build
-    - cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     - cmake --build build --config Release
-    # prepare AppImage
+    
+    # Preparación de ficheros .desktop e icono
     - if [ -f packaging/default.desktop.in ]; then envsubst < packaging/default.desktop.in > build/default.desktop; else cp packaging/default.desktop build/default.desktop; fi
     - cp packaging/elegoo-remote-control.png build/elegoo-remote-control.png
-    # Generate AppImage
+    
+    # Descarga y extracción de LinuxDeployQt
     - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
     - chmod a+x linuxdeployqt.AppImage
     - ./linuxdeployqt.AppImage --appimage-extract
-    - export PATH=$(pwd)/squashfs-root/usr/bin:$PATH
-    # AÑADIDO: -verbose=2
-    - ../squashfs-root/usr/bin/linuxdeployqt default.desktop -appimage -unsupported-allow-new-glibc -verbose=2
+    
+    # [DEBUG] Verificamos dónde está el ejecutable realmente
+    - echo "Buscando linuxdeployqt..."
+    - ls -l ${CI_PROJECT_DIR}/squashfs-root/usr/bin/linuxdeployqt
+    
+    # Nos aseguramos de que sea ejecutable
+    - chmod a+x ${CI_PROJECT_DIR}/squashfs-root/usr/bin/linuxdeployqt
+
+    # Entramos a build
+    - cd build
+    
+    # EJECUTAMOS USANDO LA RUTA ABSOLUTA (Esta es la clave)
+    - ${CI_PROJECT_DIR}/squashfs-root/usr/bin/linuxdeployqt default.desktop -appimage -unsupported-allow-new-glibc -verbose=2
+    
+    # Movemos el resultado
     - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
   artifacts:
     paths:
