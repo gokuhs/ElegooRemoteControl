@@ -61,13 +61,15 @@ create_gitlab_release:
     - if: $CI_COMMIT_TAG
   script:
     - echo "Generando Release para $CI_COMMIT_TAG"
-    
-    # 1. Construimos la URL del artifact (Usamos la API de raw artifacts)
-    # NOTA: Asegúrate de que 'build_linux' es EXACTAMENTE el nombre de tu job anterior
-    - APPIMAGE_URL="${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/build/ElegooRemoteControl-linux-x86_64.AppImage?job=build_linux"
-    
-    # 2. Imprimimos la URL para depurar (haz clic en ella en el log de GitLab si falla)
-    - echo "URL del Asset: $APPIMAGE_URL"
-    
-    # 3. Ejecutamos release-cli manualmente con --debug
-    - release-cli --debug create --name "Release $CI_COMMIT_TAG" --description "Versión Linux compilada localmente." --tag-name "$CI_COMMIT_TAG" --assets-link "{\"name\":\"Linux AppImage\",\"url\":\"$APPIMAGE_URL\"}"
+    # El símbolo '|' inicia un bloque de texto literal.
+    # GitLab ejecutará todo lo de abajo como un script sin intentar parsear el YAML dentro.
+    - |
+      APPIMAGE_URL="${CI_PROJECT_URL}/-/jobs/artifacts/${CI_COMMIT_TAG}/raw/build/ElegooRemoteControl-linux-x86_64.AppImage?job=build_linux"
+      
+      echo "URL del Asset: $APPIMAGE_URL"
+      
+      release-cli --debug create \
+        --name "Release $CI_COMMIT_TAG" \
+        --description "Versión Linux compilada localmente." \
+        --tag-name "$CI_COMMIT_TAG" \
+        --assets-link "{\"name\":\"Linux AppImage\",\"url\":\"$APPIMAGE_URL\"}"
