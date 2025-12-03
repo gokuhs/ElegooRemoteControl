@@ -14,8 +14,8 @@ build_linux:
     - if: $CI_COMMIT_TAG # Compile only Release
   before_script:
     - apt-get update
-    # Añadimos libnss3 y libasound2 a la lista
-    - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev libnss3 libasound2 fuse
+    # SE AÑADE: desktop-file-utils (CRÍTICO para linuxdeployqt)
+    - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev libnss3 libasound2 fuse desktop-file-utils
     - pip3 install aqtinstall
     - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
     - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
@@ -37,21 +37,19 @@ build_linux:
     - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
     - chmod a+x linuxdeployqt.AppImage
     
-    # 5. Generar AppImage (LA MAGIA ESTÁ AQUÍ)
+    # 5. Generar AppImage
     - cd build
     - echo "Generando AppImage versión $VERSION..."
     
-    # Eliminamos variables que confunden a la herramienta (Conflictos Qt5 vs Qt6)
     - unset QT_PLUGIN_PATH
     - unset LD_LIBRARY_PATH
     - unset QML2_IMPORT_PATH
     
-    # Ejecutamos:
-    # 1. QT_QPA_PLATFORM=offscreen : Para no buscar monitor
-    # 2. --appimage-extract-and-run : Para evitar problemas de FUSE
-    # 3. -qmake=... : Para decirle dónde está TU Qt6 real
+    # FIX IMPORTANTE: Exportar esta variable hace que NO se requiera FUSE
+    # Esto soluciona que appimagetool (llamado por linuxdeployqt) falle dentro de Docker
+    - export APPIMAGE_EXTRACT_AND_RUN=1
     
-    - QT_QPA_PLATFORM=offscreen ${CI_PROJECT_DIR}/linuxdeployqt.AppImage default.desktop -appimage -unsupported-allow-new-glibc --appimage-extract-and-run -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2
+    - QT_QPA_PLATFORM=offscreen ${CI_PROJECT_DIR}/linuxdeployqt.AppImage default.desktop -appimage -unsupported-allow-new-glibc -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2
     
     # 6. Renombrar y mover
     - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
