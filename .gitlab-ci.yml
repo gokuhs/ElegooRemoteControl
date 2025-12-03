@@ -14,8 +14,8 @@ build_linux:
     - if: $CI_COMMIT_TAG # Compile only Release
   before_script:
     - apt-get update
-    # SE AÑADE: desktop-file-utils (CRÍTICO para linuxdeployqt)
-    - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev libnss3 libasound2 fuse desktop-file-utils
+    # AÑADIDO: 'strace' y 'file' para depuración profunda
+    - apt-get install -y build-essential cmake git python3-pip wget file gettext-base patchelf libfuse2 libgl1-mesa-dev libxkbcommon-x11-0 libegl1-mesa libfontconfig1 libdbus-1-3 libglib2.0-0 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 libxcb-xfixes0 libxcb-xinerama0 libxcb-xkb1 libxkbcommon-dev libnss3 libasound2 fuse desktop-file-utils strace
     - pip3 install aqtinstall
     - aqt install-qt linux desktop 6.4.0 gcc_64 --outputdir /opt/qt
     - export PATH=/opt/qt/6.4.0/gcc_64/bin:$PATH
@@ -33,29 +33,44 @@ build_linux:
     # 3. Definir versión
     - export VERSION=$(git describe --tags --always || echo "v0.0.0")
     
-    # 4. Descargar herramienta
+    # 4. Descargar herramientas (Separamos linuxdeployqt de appimagetool)
     - wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage" -O linuxdeployqt.AppImage
-    - chmod a+x linuxdeployqt.AppImage
+    - wget -c -nv "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage" -O appimagetool.AppImage
+    - chmod a+x linuxdeployqt.AppImage appimagetool.AppImage
     
-    # 5. Generar AppImage
+    # 5. Generar AppImage PASO A PASO
     - cd build
-    - echo "Generando AppImage versión $VERSION..."
+    - echo "Iniciando empaquetado para versión $VERSION..."
     
     - unset QT_PLUGIN_PATH
     - unset LD_LIBRARY_PATH
     - unset QML2_IMPORT_PATH
     
-    # FIX IMPORTANTE: Exportar esta variable hace que NO se requiera FUSE
-    # Esto soluciona que appimagetool (llamado por linuxdeployqt) falle dentro de Docker
+    # Variable para evitar problemas de FUSE en ambos AppImages
     - export APPIMAGE_EXTRACT_AND_RUN=1
     
-    - QT_QPA_PLATFORM=offscreen ${CI_PROJECT_DIR}/linuxdeployqt.AppImage default.desktop -appimage -unsupported-allow-new-glibc -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2
+    # PASO A: Ejecutar linuxdeployqt SOLO para preparar la carpeta (sin -appimage)
+    # Usamos 'strace' para ver si muere. El log se guardará en trace_deploy.txt
+    # El flag -bundle-non-qt-libs asegura que meta todo en la carpeta
+    - echo "Ejecutando linuxdeployqt (Bundling)..."
+    - strace -f -s 2000 -o ../trace_deploy.txt ${CI_PROJECT_DIR}/linuxdeployqt.AppImage default.desktop -bundle-non-qt-libs -unsupported-allow-new-glibc -qmake=/opt/qt/6.4.0/gcc_64/bin/qmake -verbose=2
     
-    # 6. Renombrar y mover
-    - mv ElegooRemoteControl*.AppImage ElegooRemoteControl-linux-x86_64.AppImage
+    # Comprobamos si el paso anterior generó la estructura AppDir correcta
+    - if [ ! -d "AppDir" ] && [ ! -f "AppRun" ]; then echo "Parece que linuxdeployqt falló preparando el directorio. Revisa trace_deploy.txt en artifacts."; ls -la; fi
+    
+    # PASO B: Ejecutar appimagetool manualmente para crear el archivo final
+    # Esto aísla el error de creación de imagen del error de dependencias de Qt
+    - echo "Ejecutando appimagetool (Packaging)..."
+    - ${CI_PROJECT_DIR}/appimagetool.AppImage . ElegooRemoteControl-linux-x86_64.AppImage
+    
+    # 6. Mover resultado (si existe)
+    - ls -la *.AppImage || echo "No se generó el AppImage final"
+    
   artifacts:
+    when: always # Guardar artifacts incluso si falla para ver el log de strace
     paths:
       - build/ElegooRemoteControl-linux-x86_64.AppImage
+      - trace_deploy.txt
 
 # 3. Publish Gitlab
 create_gitlab_release:
