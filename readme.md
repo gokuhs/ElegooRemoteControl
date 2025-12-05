@@ -2,7 +2,7 @@
 
 **ElegooRemoteControl** is a native C++ GUI application designed to control and monitor Elegoo Saturn 3D printers over the network. 
 
-This project is a high-performance port of the original Python tool **[Cassini](https://github.com/vladimirv/cassini)**. It replicates the complex network logic (custom MQTT broker + HTTP server handshake) required to communicate with the printer's mainboard, but wrapped in a modern, easy-to-use Qt 6 interface.
+This project is a high-performance port of the original Python tool **[Cassini](https://github.com/vvuk/cassini)**. It replicates the complex network logic (custom MQTT broker + HTTP server handshake) required to communicate with the printer's mainboard, but wrapped in a modern, easy-to-use Qt 6 interface.
 
 ## Features
 
@@ -75,7 +75,7 @@ sudo apt install build-essential cmake qt6-base-dev qt6-base-dev-tools qt6-l10n-
 
 **ElegooRemoteControl** es una aplicación nativa en C++ con interfaz gráfica diseñada para controlar y monitorizar impresoras 3D Elegoo Saturn a través de la red local.
 
-Este proyecto es un *port* de alto rendimiento de la herramienta original en Python llamada **[Cassini](https://github.com/vladimirv/cassini)**. Replica la compleja lógica de red (*Broker* MQTT personalizado + *Handshake* de servidor HTTP) necesaria para comunicarse con la placa base de la impresora, pero envuelta en una interfaz moderna y fácil de usar basada en Qt 6.
+Este proyecto es un *port* de alto rendimiento de la herramienta original en Python llamada **[Cassini](https://github.com/vvuk/cassini)**. Replica la compleja lógica de red (*Broker* MQTT personalizado + *Handshake* de servidor HTTP) necesaria para comunicarse con la placa base de la impresora, pero envuelta en una interfaz moderna y fácil de usar basada en Qt 6.
 
 ## Características
 
